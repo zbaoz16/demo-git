@@ -1,0 +1,290 @@
+@ECHO off 
+SETLOCAL EnableDelayedExpansion
+
+:: Configuration
+SET WORKINGDIR=%~DP0
+SET TEMPFILE="%WORKINGDIR%info.txt"
+SET SCCFGFILE="%WORKINGDIR%ApplicationConfigurationNoBmpPostfix.sccfg"
+
+:: Check path of the Config XML file
+SET ConfigXML=%WORKINGDIR%Config.xml
+
+IF NOT EXIST "%ConfigXML%" (
+    @ECHO Please correct the ConfigXML file path or close this opened file.
+    GOTO :END
+)
+:: Get tool and car visual image paths from the ConfigCV.csv file
+SET SCSFilePath=
+SET SCLFilePath=
+SET FTCProgram=
+SET CGIPath=
+SET SOLUTION=
+SET GENASSET=
+SET ImagePath=
+SET SCOPE=
+SET VARIANT=
+SET GITREPO=
+SET RESOURCE=
+SET DES_RESOURCE=
+SET RESULT=
+SET FAIL=FAIL
+SET SUCCESS=SUCCESS
+SET SingleXML=
+SET ImageXML=
+SET RESOURCE_RES=
+SET OPTION=
+
+@ECHO ***************************************************************************************
+rem @ECHO Configuration File: '!ConfigXML!' GitRepoFolder: '!GitRepoFolder!'
+
+CALL %WORKINGDIR%ParseGraphicImport.py
+FOR %%X in (%WORKINGDIR%single_*.xml) DO (
+    SET SingleXML=%%X
+    @ECHO Importing for !SingleXML! ...
+    rem CALL %WORKINGDIR%ParseImageFolder.py !SingleXML!
+    CALL :IMPORT
+    DEL !SingleXML!
+)
+GOTO :SUCCESS
+
+:IMPORT
+@ECHO Graphic Import ...
+FOR /F "tokens=3 delims=<>" %%A IN ('FINDSTR /I /C:"<Scope>" %SingleXML%') DO (SET SCOPE=%%A)
+FOR /F "tokens=3 delims=<>" %%A IN ('FINDSTR /I /C:"<Variant>" %SingleXML%') DO (SET VARIANT=%%A)
+FOR /F "tokens=3 delims=<>" %%A IN ('FINDSTR /I /C:"<GitRepo>" %SingleXML%') DO (SET GITREPO=%%A)
+FOR /F "tokens=3 delims=<>" %%A IN ('FINDSTR /I /C:"<Resource>" %SingleXML%') DO (SET RESOURCE=%%A)
+FOR /F "tokens=3 delims=<>" %%A IN ('FINDSTR /I /C:"<Option>" %SingleXML%') DO (SET OPTION=%%A)
+@ECHO SCOPE is "%SCOPE%"
+@ECHO VARIANT is "%VARIANT%"
+@ECHO GITREPO is "%GITREPO%"
+@ECHO RESOURCE is "%RESOURCE%"
+@ECHO OPTION is "%OPTION%"
+
+SET CGIPath=!GITREPO!\ai_cgi_delivery\CGI\bin\SceneComposer
+IF "%SCOPE%" == "MMC" (
+    IF "%VARIANT%" == "MMC8" (
+        SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\Scope3_Mitsubishi\Bitmaps_15_9
+        SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope3_Mitsubishi\_scripts\SceneComposer_GenerateAssets.cmd
+        SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope3_Mitsubishi\GUI\SCL\Bitmaps_15_9.scl
+    ) ELSE (
+        IF "%VARIANT%" == "MMC9" (
+            SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\Scope3_Mitsubishi_HighRes\Bitmaps_15_9
+            SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope3_Mitsubishi_HighRes\_scripts\SceneComposer_GenerateAssets.cmd
+            SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope3_Mitsubishi_HighRes\GUI\SCL\Bitmaps_15_9.scl
+        ) ELSE (
+            @ECHO Wrong Variant Input, please config this value is MMC8/MMC9
+            GOTO :END
+        )
+    )
+) ELSE (
+    IF "%SCOPE%" == "Nissan3x" (
+        IF "%VARIANT%" == "15_9" (
+            SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\Scope2_1_N\Bitmaps_15_9
+            SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope2\_scripts\SceneComposer_GenerateAssets_15_9.cmd
+            SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope2\GUI\SCL\Bitmaps_15_9.scl
+        ) ELSE (
+            IF "%VARIANT%" == "HighRes" (
+                SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\Scope3_Nissan_HighRes\Bitmaps_15_9
+                SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope3_Nissan_HighRes\_scripts\SceneComposer_GenerateAssets.cmd
+                SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope3_Nissan_HighRes\GUI\SCL\Bitmaps_15_9.scl
+            ) ELSE (
+                @ECHO Wrong Variant Input, please config this value is 15_9/HighRes
+                GOTO :END
+            )
+        )
+    ) ELSE (
+        IF "%SCOPE%" == "Nissan21" (
+            IF "%VARIANT%" == "15_9" (
+                SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\Scope2_1_N\Bitmaps_15_9
+                SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope2\_scripts\SceneComposer_GenerateAssets_15_9.cmd
+                SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope2\GUI\SCL\Bitmaps_15_9.scl
+            ) ELSE (
+                IF "%VARIANT%" == "17_9" (
+                    SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\Scope2_1_N\Bitmaps_17_9
+                    SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope2\_scripts\SceneComposer_GenerateAssets_17_9.cmd
+                    SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\Scope2\GUI\SCL\Bitmaps_17_9.scl
+                ) ELSE (
+                    @ECHO Wrong Variant Input, please config this value is 15_9/17_9
+                    GOTO :END
+                )
+            )
+        ) ELSE (
+            IF "%SCOPE%" == "PIVI" (
+                IF "%VARIANT%" == "PIVI" (
+                    SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\PIVI\Bitmaps
+                    SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\PIVI\_scripts\SceneComposer_GenerateAssets_PIVI.cmd
+                    SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\PIVI\GUI\SCL\Bitmaps.scl
+                ) ELSE (
+                    IF "%VARIANT%" == "PIVI_P61G" (
+                        SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\PIVI_P61G\Bitmaps
+                        SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\PIVI\_scripts\SceneComposer_GenerateAssets_PIVI_P61G.cmd
+                        SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\PIVI\GUI\SCL\Bitmaps_P61G.scl
+                    ) ELSE (
+                        @ECHO Wrong Variant Input, please config this value is PIVI/PIVI_P61G
+                        GOTO :END
+                    )
+                )
+            ) ELSE (
+                IF "%SCOPE%" == "PIVI2" (
+                    IF "%VARIANT%" == "PIVI2_P42Q" (
+                        SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\PIVI2\Bitmaps_15_9
+                        SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\PIVI2\_scripts\SceneComposer_GenerateAssets.cmd
+                        SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\PIVI2\GUI\SCL\Bitmaps_15_9.scl
+                    ) ELSE (
+                        IF "%VARIANT%" == "PIVI2_P61G" (
+                            SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\PIVI2_P61G\Bitmaps_15_9
+                            SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\PIVI2\_scripts\SceneComposer_GenerateAssets_P61G.cmd
+                            SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\PIVI2\GUI\SCL\Bitmaps_15_9_P61G.scl
+                        ) ELSE (
+                            @ECHO Wrong Variant Input, please config this value is PIVI2_P42Q/PIVI2_P61G
+                            GOTO :END
+                        )
+                    )
+                ) ELSE (
+                    IF "%SCOPE%" == "PIVI3x" (
+                        IF "%VARIANT%" == "PIVI" (
+                            SET SCSFilePath=!GITREPO!\ai_nissan_hmi_res\bitmap_import\PIVI\Bitmaps
+                            SET GENASSET=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\PIVI\_scripts\SceneComposer_GenerateAssets_PIVI.cmd
+                            SET SCLFilePath=!GITREPO!\ai_nissan_hmi\products\NINCG3\Apps\AppHmi_Umbrella\PIVI\GUI\SCL\Bitmaps.scl
+                        ) ELSE (
+                            @ECHO Wrong Variant Input, please config this value is PIVI
+                            GOTO :END
+                        )
+                    ) ELSE (
+                        @ECHO Wrong Scope Input, please config this value is MMC/Nissan3x/Nissan21/PIVI/PIVI2/PIVI3x
+                        GOTO :END
+                    )
+                )
+            )
+        )
+    )
+)
+IF "%SCOPE%" == "PIVI" (
+    SET SOLUTION=!SCSFilePath!\Solution\PIVIResources
+    SET DES_RESOURCE=PIVIResources
+) ELSE (
+    SET SOLUTION=!SCSFilePath!\Solution\AIVIResources
+    SET DES_RESOURCE=AIVIResources
+)
+@ECHO SOLUTION: '%SOLUTION%'
+
+@ECHO CGIPath: '%CGIPath%'
+SET FTCProgram=!CGIPath!\FTCCmd.exe
+@ECHO FTCProgram: '%FTCProgram%'
+
+@ECHO Copy SCHost.dll.orig in the ..\ai_cgi_delivery\CGI\bin\SceneComposer to SCHost.dll file
+COPY !CGIPath!\SCHost.dll.orig !CGIPath!\SCHost.dll
+
+
+rem Copy graphic release from server to local
+SET RESOURCE_RES=!WORKINGDIR!!SCOPE!_!VARIANT!
+MD %RESOURCE_RES%
+IF "%OPTION%" == "Manual" (
+    CALL %WORKINGDIR%ParseImageFolder.py !SingleXML!
+    FOR %%Y in (%WORKINGDIR%image_*.xml) DO (
+        SET ImageXML=%%Y
+        FOR /F "tokens=3 delims=<>" %%A IN ('FINDSTR /I /C:"<Source>" !ImageXML!') DO (SET Source=%%A)
+        FOR /F "tokens=3 delims=<>" %%A IN ('FINDSTR /I /C:"<Import>" !ImageXML!') DO (SET Import=%%A)
+        FOR /F "tokens=3 delims=<>" %%A IN ('FINDSTR /I /C:"<Destination>" !ImageXML!') DO (SET Destination=%%A)
+        IF "!Import!" == "All" (
+            MD !RESOURCE_RES!\!Source!
+            pushd !RESOURCE!
+            COPY !Source! !RESOURCE_RES!\!Source!
+            popd
+            IF NOT EXIST "!SOLUTION!\!Destination!" (
+                @ECHO ERR: "!Source!" folder is not imported because it's not existed in !SOLUTION!
+                @ECHO Please check the Resource Folder in !RESOURCE_RES!
+                GOTO :END
+            ) ELSE (
+                @ECHO Import all images in the folder "!Source!"
+                @ECHO Importing ....
+                CALL !FTCProgram! Import !SCSFilePath!\AppHmi_Bitmaps.scs /Importer Image /Input !RESOURCE_RES!\!Source!\* /Destination /!DES_RESOURCE!/!Destination! /Cfg !SCCFGFILE!
+            )
+        ) ELSE (
+            IF "!Import!" == "Select" (
+                MD !RESOURCE_RES!\!Source!
+                FOR /F "tokens=3 delims=<>" %%A IN ('FINDSTR /I /C:"<Image>" !ImageXML!') DO (
+                    SET Image=%%A
+                    pushd !RESOURCE!
+                    COPY !Source!\!Image! !RESOURCE_RES!\!Source!
+                    popd
+                )
+                IF NOT EXIST "!SOLUTION!\!Destination!" (
+                    @ECHO ERR: "!Source!" folder is not imported because it's not existed in !SOLUTION!
+                    @ECHO Please check the Resource Folder in !RESOURCE_RES!
+                    GOTO :END
+                ) ELSE (
+                    @ECHO Import all images in the folder "!Source!"
+                    @ECHO Importing ....
+                    CALL !FTCProgram! Import !SCSFilePath!\AppHmi_Bitmaps.scs /Importer Image /Input !RESOURCE_RES!\!Source!\* /Destination /!DES_RESOURCE!/!Destination! /Cfg !SCCFGFILE!
+                )
+            ) ELSE (
+                @ECHO Wrong Import Input, please config the <Import> value with All/Select
+                GOTO :END
+            )
+        )
+        DEL !ImageXML!
+    )
+) ELSE (
+    IF "%OPTION%" == "Auto" (
+        pushd !RESOURCE!
+        xcopy /S . !RESOURCE_RES!
+        popd
+        FOR /F "delims=" %%A IN ('DIR /ad /b !RESOURCE_RES!') DO (
+            SET Source=%%A
+            IF NOT EXIST "!SOLUTION!\!Source!" (
+                @ECHO ERR: "!Source!" folder is not imported because it's not existed in !SOLUTION!
+                @ECHO Please check the Resource Folder in !RESOURCE_RES!
+                GOTO :END
+            ) ELSE (
+                @ECHO Import all images in the folder "!Source!"
+                @ECHO Importing ....
+                CALL !FTCProgram! Import !SCSFilePath!\AppHmi_Bitmaps.scs /Importer Image /Input !RESOURCE_RES!\!Source!\* /Destination /!DES_RESOURCE!/!Source! /Cfg !SCCFGFILE!
+            )
+        )
+    ) ELSE (
+        @ECHO Wrong Import Input, please config the <Option> value with Auto/Manual
+        GOTO :END
+    )
+)
+:: Export SCL file - only for SCL folder existed
+IF EXIST "%SCLFilePath%" (
+    @ECHO Exporting SCL file...%SCLFilePath%
+    CALL %FTCProgram% ExportScl %SCSFilePath%\AppHmi_Bitmaps.scs /outscl %SCLFilePath%
+)
+
+@ECHO Delete SCHost.dll in the ..\ai_cgi_delivery\CGI\bin\SceneComposer
+DEL !CGIPath!\SCHost.dll
+
+:: Generate Asset file
+@ECHO ***************************************************************************************
+@ECHO GENASSET: %GENASSET%
+
+COPY %GENASSET% !GENASSET!.bak
+
+SET "search=pause"
+SET "replace="
+
+SET "textFile=%GENASSET%"
+
+FOR /F "delims=" %%i IN ('TYPE "%textFile%" ^& BREAK ^> "%textFile%" ') DO (
+    SET "line=%%i"
+    SETLOCAL EnableDelayedExpansion
+    >>"%textFile%" echo(!line:%search%=%replace%!
+    ENDLOCAL
+)
+
+@ECHO Generating ASSET file... 
+CALL %GENASSET%
+DEL %textFile%
+MOVE !GENASSET!.bak !GENASSET!
+GOTO :EOF
+
+:SUCCESS
+@ECHO Graphic Import is generated successfully in all configurations
+@ECHO Done.
+pause
+GOTO :EOF
+:END
+@ECHO Graphic Import is failed, please check the error and run again
+TIMEOUT 10 /nobreak
